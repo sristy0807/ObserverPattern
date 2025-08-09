@@ -1,0 +1,66 @@
+// 1. Observer Interface
+public interface IEventObserver<T>
+{
+    void OnEventRaised(T data);
+}
+
+// 2. Base Subject
+using System;
+using System.Collections.Generic;
+
+public class EventSubject<T>
+{
+    private readonly List<IEventObserver<T>> observers = new();
+
+    public void AddObserver(IEventObserver<T> observer)
+    {
+        if (!observers.Contains(observer)) observers.Add(observer);
+    }
+
+    public void RemoveObserver(IEventObserver<T> observer)
+    {
+        observers.Remove(observer);
+    }
+
+    protected void NotifyObservers(T data)
+    {
+        foreach (var obs in observers) obs.OnEventRaised(data);
+    }
+}
+
+// 3. Concrete Event
+public class RegisterPatientEvent : EventSubject<RegisterPatientModel>
+{
+    public void Raise(RegisterPatientModel patient)
+    {
+        NotifyObservers(patient);
+    }
+}
+
+// 4. View (Triggers Event)
+using UnityEngine;
+public class RegisterPatientView : MonoBehaviour
+{
+    [SerializeField] private RegisterPatientEvent patientEvent;
+
+    public void OnClickRegisterPatient()
+    {
+        var model = new RegisterPatientModel("John", "Doe", "MRN001");
+        patientEvent.Raise(model);
+    }
+}
+
+// 5. Controller (Observer)
+using UnityEngine;
+public class RegisterPatientController : MonoBehaviour, IEventObserver<RegisterPatientModel>
+{
+    [SerializeField] private RegisterPatientEvent patientEvent;
+
+    private void OnEnable() => patientEvent.AddObserver(this);
+    private void OnDisable() => patientEvent.RemoveObserver(this);
+
+    public void OnEventRaised(RegisterPatientModel patient)
+    {
+        Debug.Log($"New patient: {patient.FirstName} {patient.LastName}");
+    }
+}
